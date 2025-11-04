@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from .embedder import EMBED_DIM, text_to_embedding, vec_to_pgvector_literal
 from .db import insert_memory, run_migrations, search_memories
 from .llama_client import embed as llama_embed, completion as llama_completion, health as llama_health
+from .llama_client import start_server as llama_start_server, stop_server as llama_stop_server
 
 
 class TalkRequest(BaseModel):
@@ -93,3 +94,35 @@ def memories_search(req: SearchRequest) -> List[Dict[str, Any]]:
     emb_literal = vec_to_pgvector_literal(emb)
     rows = search_memories(emb_literal, pet_id=req.pet_id, k=req.k or 5)
     return rows
+
+
+class ModelStartRequest(BaseModel):
+    # command as a list of args; if omitted we use LLAMA_SERVER_CMD env
+    cmd: Optional[List[str]] = None
+    cwd: Optional[str] = None
+
+
+@app.get("/model/status")
+def model_status() -> Dict[str, Any]:
+    running = llama_health()
+    return {"running": running, "url": os.environ.get("LLAMA_SERVER_URL", "http://127.0.0.1:8080")}
+
+
+@app.post("/model/start")
+def model_start(req: ModelStartRequest):
+    # decide command
+    cmd = req.cmd
+    if not cmd:
+        raw = os.environ.get("LLAMA_SERVER_CMD")
+        if not raw:
+            raise HTTPException(status_code=400, detail="No command provided and LLAMA_SERVER_CMD not set")
+        # naive split
+        cmd = raw.split()
+    res = llama_start_server(cmd, cwd=req.cwd)
+    return res
+
+
+@app.post("/model/stop")
+def model_stop():
+    res = llama_stop_server()
+    return res
