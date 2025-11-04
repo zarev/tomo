@@ -9,6 +9,7 @@ This PoC uses a deterministic local embedder (no external models required).
 """
 import os
 from typing import Any, Dict, List, Optional
+from fastapi.staticfiles import StaticFiles
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
@@ -37,6 +38,11 @@ class SearchRequest(BaseModel):
 
 
 app = FastAPI(title="tomo-poc-backend")
+
+# Serve the simple frontend for PoC from ../frontend
+frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+if os.path.isdir(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 
 @app.on_event("startup")
