@@ -1,0 +1,5 @@
+pytest>=7.0
+pdf2image
+Pillow
+tqdm
+google-generativeai
