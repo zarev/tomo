@@ -17,23 +17,52 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 import requests
+import logging
+
+logger = logging.getLogger("gemini_client")
+logging.basicConfig(level=logging.INFO)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_BASE_URL = os.environ.get("GEMINI_BASE_URL", "")
 EMBED_MODEL = os.environ.get("GEMINI_EMBED_MODEL", "")
 TEXT_MODEL = os.environ.get("GEMINI_TEXT_MODEL", "")
+GEMINI_USE_KEY = os.environ.get("GEMINI_USE_KEY", "").lower() in ("1", "true", "yes")
 
 
 def _auth_headers() -> Dict[str, str]:
-    return {"Authorization": f"Bearer {GEMINI_API_KEY}", "Content-Type": "application/json"}
+    """Return headers for requests.
+
+    If GEMINI_USE_KEY is true or the provided API key looks like a Google API key
+    (starts with 'AIza'), we will not send an Authorization header and instead
+    send the key as a query parameter. Otherwise we send Authorization: Bearer.
+    """
+    headers = {"Content-Type": "application/json"}
+    if GEMINI_API_KEY and not (GEMINI_USE_KEY or (GEMINI_API_KEY.startswith("AIza"))):
+        headers["Authorization"] = f"Bearer {GEMINI_API_KEY}"
+    return headers
 
 
 def _post(url: str, json: Dict[str, Any], timeout: float = 10.0) -> Optional[requests.Response]:
     if not GEMINI_API_KEY or not url:
+        logger.debug("Missing API key or URL for Gemini request: %s", url)
         return None
     try:
-        return requests.post(url, json=json, headers=_auth_headers(), timeout=timeout)
+        # decide whether to send key as query param (Google API key) or use Authorization header
+        send_key_as_param = GEMINI_USE_KEY or (GEMINI_API_KEY.startswith("AIza"))
+        if send_key_as_param:
+            resp = requests.post(url, params={"key": GEMINI_API_KEY}, json=json, headers=_auth_headers(), timeout=timeout)
+        else:
+            resp = requests.post(url, json=json, headers=_auth_headers(), timeout=timeout)
+
+        # log for debugging
+        logger.info("POST %s -> %s", url, resp.status_code)
+        try:
+            logger.debug("Response body: %s", resp.text)
+        except Exception:
+            pass
+        return resp
     except requests.RequestException:
+        logger.exception("Request to %s failed", url)
         return None
 
 
@@ -45,7 +74,11 @@ def embed(text: str) -> Optional[np.ndarray]:
     if not GEMINI_API_KEY or not GEMINI_BASE_URL:
         return None
 
-    model = EMBED_MODEL or "embedding-model"
+    # Normalize model name: accept either 'models/<name>' or just '<name>'
+    model = (EMBED_MODEL or "embedding-model").lstrip("/")
+    if model.startswith("models/"):
+        model = model.split("/", 1)[1]
+
     candidates = [
         f"{GEMINI_BASE_URL.rstrip('/')}/v1/models/{model}:embed",
         f"{GEMINI_BASE_URL.rstrip('/')}/v1/models/{model}:embedText",
@@ -85,7 +118,11 @@ def completion(prompt: str, max_tokens: int = 256) -> Optional[str]:
     if not GEMINI_API_KEY or not GEMINI_BASE_URL:
         return None
 
-    model = TEXT_MODEL or "text-model"
+    # Normalize model name: accept either 'models/<name>' or just '<name>'
+    model = (TEXT_MODEL or "text-model").lstrip("/")
+    if model.startswith("models/"):
+        model = model.split("/", 1)[1]
+
     candidates = [
         f"{GEMINI_BASE_URL.rstrip('/')}/v1/models/{model}:generate",
         f"{GEMINI_BASE_URL.rstrip('/')}/v1/models/{model}:predict",
