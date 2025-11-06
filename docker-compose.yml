@@ -11,5 +11,21 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
 
+  backend:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app:cached
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/tomo
+      PYTHONUNBUFFERED: '1'
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "pip install --no-cache-dir -r backend/requirements.txt && \
+      uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+
 volumes:
   db-data:
