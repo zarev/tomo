@@ -39,7 +39,7 @@ document.getElementById("send").addEventListener("click", async () => {
   replyEl.textContent = "...connecting";
   setLoadingState(true);
   try {
-    const data = await postJSON("/talk", { text });
+  const data = await postJSON("/api/talk", { text });
     replyEl.textContent = data.reply;
     spriteEl.textContent = data.reply?.charAt(0) || "9";
     addMemoryRow(`Saved memory: ${data.memory_id}`);
@@ -62,7 +62,7 @@ document.getElementById("search").addEventListener("click", async () => {
   addMemoryRow("Searching...");
   setLoadingState(true);
   try {
-    const rows = await postJSON("/memories/search", { text, k: 5 });
+  const rows = await postJSON("/api/memories/search", { text, k: 5 });
     memoriesEl.innerHTML = "";
     if (!rows || rows.length === 0) {
       addMemoryRow("No memories found.");

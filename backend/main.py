@@ -65,12 +65,12 @@ def startup():
         print("Migration error:", e)
 
 
-@app.get("/health")
+@app.get("/api/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/talk", response_model=TalkResponse)
+@app.post("/api/talk", response_model=TalkResponse)
 def talk(req: TalkRequest) -> TalkResponse:
     if not req.text:
         raise HTTPException(status_code=400, detail="text is required")
@@ -104,7 +104,7 @@ def talk(req: TalkRequest) -> TalkResponse:
     return TalkResponse(reply=reply, memory_id=row.get("id"))
 
 
-@app.post("/memories/search")
+@app.post("/api/memories/search")
 def memories_search(req: SearchRequest) -> List[Dict[str, Any]]:
     emb = text_to_embedding(req.text)
     emb_literal = vec_to_pgvector_literal(emb)
@@ -118,13 +118,13 @@ class ModelStartRequest(BaseModel):
     cwd: Optional[str] = None
 
 
-@app.get("/model/status")
+@app.get("/api/model/status")
 def model_status() -> Dict[str, Any]:
     running = llama_health()
     return {"running": running, "url": os.environ.get("LLAMA_SERVER_URL", "http://127.0.0.1:8080")}
 
 
-@app.post("/model/start")
+@app.post("/api/model/start")
 def model_start(req: ModelStartRequest):
     # decide command
     cmd = req.cmd
@@ -138,7 +138,7 @@ def model_start(req: ModelStartRequest):
     return res
 
 
-@app.post("/model/stop")
+@app.post("/api/model/stop")
 def model_stop():
     res = llama_stop_server()
     return res
