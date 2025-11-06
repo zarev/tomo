@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.Python
+env/
+venv/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.venv/
+*.egg-info/
+__pycache__/
+docker-compose.override.yml
+*.env
+*.sqlite3
+node_modules/

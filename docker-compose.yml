@@ -12,7 +12,9 @@ services:
       - db-data:/var/lib/postgresql/data
 
   backend:
-    image: python:3.11-slim
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     working_dir: /app
     volumes:
       - ./:/app:cached
@@ -24,8 +26,7 @@ services:
     ports:
       - "8000:8000"
     command: >
-      sh -c "pip install --no-cache-dir -r backend/requirements.txt && \
-      uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+      sh -c "uvicorn backend.main:app --host 0.0.0.0 --port 8000"
 
 volumes:
   db-data:
