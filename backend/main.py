@@ -10,6 +10,7 @@ This PoC uses a deterministic local embedder (no external models required).
 import os
 from typing import Any, Dict, List, Optional
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
@@ -42,7 +43,16 @@ app = FastAPI(title="tomo-poc-backend")
 # Serve the simple frontend for PoC from ../frontend
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 if os.path.isdir(frontend_dir):
-    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+    # Serve static files under /static to avoid shadowing API routes
+    app.mount("/static", StaticFiles(directory=frontend_dir), name="frontend_static")
+
+    # Serve the SPA index at root
+    @app.get("/", include_in_schema=False)
+    def root_index():
+        index = os.path.join(frontend_dir, "index.html")
+        if os.path.isfile(index):
+            return FileResponse(index, media_type="text/html")
+        raise HTTPException(status_code=404, detail="Index not found")
 
 
 @app.on_event("startup")

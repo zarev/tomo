@@ -21,7 +21,6 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/tomo
       PYTHONUNBUFFERED: '1'
-      # Gemini API configuration (set these in your environment; do NOT commit keys)
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_BASE_URL: ${GEMINI_BASE_URL}
       GEMINI_EMBED_MODEL: ${GEMINI_EMBED_MODEL}
