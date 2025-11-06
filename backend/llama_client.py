@@ -14,6 +14,7 @@ import numpy as np
 import requests
 
 from .embedder import text_to_embedding
+from . import gemini_client
 
 # Config
 LLAMA_URL = os.environ.get("LLAMA_SERVER_URL", "http://127.0.0.1:8080")
@@ -103,6 +104,17 @@ def embed(text: str) -> np.ndarray:
     Attempts to call a running llama.cpp server; if unavailable, fall back to
     the deterministic embedder in `embedder.py`.
     """
+    # If a Gemini API key is provided, prefer using Gemini for embeddings
+    try:
+        emb = None
+        if os.environ.get("GEMINI_API_KEY"):
+            emb = gemini_client.embed(text)
+        if emb is not None:
+            return emb
+    except Exception:
+        # ignore and fall back to local endpoints
+        pass
+
     # Try common endpoints: /embed, /embeddings, /v1/embeddings
     candidates = ["/embed", "/embeddings", "/v1/embeddings"]
     payload_variants = [{"text": text}, {"input": text}, {"inputs": [text]}]
@@ -142,6 +154,15 @@ def completion(prompt: str, n_predict: int = 128, temperature: float = 0.7) -> s
         {"input": prompt, "n_predict": n_predict, "temperature": temperature},
         {"text": prompt, "max_tokens": n_predict, "temperature": temperature},
     ]
+
+    # If a Gemini API key is provided, try Gemini first
+    try:
+        if os.environ.get("GEMINI_API_KEY"):
+            text = gemini_client.completion(prompt, max_tokens=n_predict)
+            if text:
+                return text
+    except Exception:
+        pass
 
     for path in candidates:
         for payload in payload_variants:
