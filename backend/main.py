@@ -29,6 +29,7 @@ class TalkRequest(BaseModel):
 class TalkResponse(BaseModel):
     reply: str
     memory_id: Optional[str] = None
+    memory_content: Optional[str] = None
 
 
 class SearchRequest(BaseModel):
@@ -104,7 +105,11 @@ def talk(req: TalkRequest) -> TalkResponse:
         summary = req.text.strip().replace('\n', ' ')[:120]
         reply = f"Tomo: I heard '{summary}'. Thanks for sharing!"
 
-    return TalkResponse(reply=reply, memory_id=row.get("id"))
+    return TalkResponse(
+        reply=reply,
+        memory_id=row.get("id"),
+        memory_content=req.text,
+    )
 
 
 @app.post("/api/memories/search")

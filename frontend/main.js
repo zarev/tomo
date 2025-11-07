@@ -42,7 +42,8 @@ document.getElementById("send").addEventListener("click", async () => {
   const data = await postJSON("/api/talk", { text });
     replyEl.textContent = data.reply;
     spriteEl.textContent = data.reply?.charAt(0) || "9";
-    addMemoryRow(`Saved memory: ${data.memory_id}`);
+    const savedText = data.memory_content ?? data.memory_id ?? "(unknown memory)";
+    addMemoryRow(`Saved memory: ${savedText}`);
     inputEl.value = "";
   } catch (err) {
     replyEl.textContent = "Error: " + err.message;
