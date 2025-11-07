@@ -1,3 +1,10 @@
+function setLoadingState(isLoading) {
+  const sendBtn = document.getElementById("send");
+  const searchBtn = document.getElementById("search");
+  sendBtn.disabled = isLoading;
+  searchBtn.disabled = isLoading;
+}
+
 async function postJSON(path, body) {
   const res = await fetch(path, {
     method: "POST",
@@ -11,40 +18,70 @@ async function postJSON(path, body) {
   return res.json();
 }
 
+const replyEl = document.getElementById("reply");
+const spriteEl = document.getElementById("pet-sprite");
+const inputEl = document.getElementById("input");
+const memoriesEl = document.getElementById("memories");
+
+function addMemoryRow(text) {
+  const row = document.createElement("div");
+  row.className = "memory-row";
+  row.textContent = text;
+  memoriesEl.prepend(row);
+}
+
 document.getElementById("send").addEventListener("click", async () => {
-  const text = document.getElementById("input").value;
-  const replyEl = document.getElementById("reply");
-  replyEl.textContent = "...waiting";
+  const text = inputEl.value.trim();
+  if (!text) {
+    inputEl.focus();
+    return;
+  }
+  replyEl.textContent = "...connecting";
+  setLoadingState(true);
   try {
-    const data = await postJSON('/talk', { text });
+  const data = await postJSON("/api/talk", { text });
     replyEl.textContent = data.reply;
-    // show memory id
-    const mems = document.getElementById('memories');
-    const row = document.createElement('div');
-    row.textContent = `Saved memory: ${data.memory_id}`;
-    mems.prepend(row);
+    spriteEl.textContent = data.reply?.charAt(0) || "9";
+    addMemoryRow(`Saved memory: ${data.memory_id}`);
+    inputEl.value = "";
   } catch (err) {
-    replyEl.textContent = 'Error: ' + err.message;
+    replyEl.textContent = "Error: " + err.message;
+  } finally {
+    setLoadingState(false);
+    inputEl.focus();
   }
 });
 
 document.getElementById("search").addEventListener("click", async () => {
-  const text = document.getElementById("input").value;
-  const mems = document.getElementById('memories');
-  mems.textContent = 'Searching...';
+  const text = inputEl.value.trim();
+  if (!text) {
+    inputEl.focus();
+    return;
+  }
+  memoriesEl.innerHTML = "";
+  addMemoryRow("Searching...");
+  setLoadingState(true);
   try {
-    const rows = await postJSON('/memories/search', { text, k: 5 });
-    mems.innerHTML = '';
+  const rows = await postJSON("/api/memories/search", { text, k: 5 });
+    memoriesEl.innerHTML = "";
     if (!rows || rows.length === 0) {
-      mems.textContent = 'No memories found.';
+      addMemoryRow("No memories found.");
       return;
     }
     for (const r of rows) {
-      const el = document.createElement('div');
-      el.textContent = `${r.content} (dist=${r.distance?.toFixed?.(3) ?? r.distance})`;
-      mems.appendChild(el);
+      addMemoryRow(`${r.content} (dist=${r.distance?.toFixed?.(3) ?? r.distance})`);
     }
   } catch (err) {
-    mems.textContent = 'Error: ' + err.message;
+    memoriesEl.innerHTML = "";
+    addMemoryRow("Error: " + err.message);
+  } finally {
+    setLoadingState(false);
+  }
+});
+
+inputEl.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    document.getElementById("send").click();
   }
 });

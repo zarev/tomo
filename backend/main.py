@@ -10,6 +10,7 @@ This PoC uses a deterministic local embedder (no external models required).
 import os
 from typing import Any, Dict, List, Optional
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
@@ -17,8 +18,7 @@ from pydantic import BaseModel
 
 from .embedder import EMBED_DIM, text_to_embedding, vec_to_pgvector_literal
 from .db import insert_memory, run_migrations, search_memories
-from .llama_client import embed as llama_embed, completion as llama_completion, health as llama_health
-from .llama_client import start_server as llama_start_server, stop_server as llama_stop_server
+from .llm_client import embed as llama_embed, completion as llama_completion, health as llama_health
 
 
 class TalkRequest(BaseModel):
@@ -42,7 +42,16 @@ app = FastAPI(title="tomo-poc-backend")
 # Serve the simple frontend for PoC from ../frontend
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 if os.path.isdir(frontend_dir):
-    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+    # Serve static files under /static to avoid shadowing API routes
+    app.mount("/static", StaticFiles(directory=frontend_dir), name="frontend_static")
+
+    # Serve the SPA index at root
+    @app.get("/", include_in_schema=False)
+    def root_index():
+        index = os.path.join(frontend_dir, "index.html")
+        if os.path.isfile(index):
+            return FileResponse(index, media_type="text/html")
+        raise HTTPException(status_code=404, detail="Index not found")
 
 
 @app.on_event("startup")
@@ -55,12 +64,12 @@ def startup():
         print("Migration error:", e)
 
 
-@app.get("/health")
+@app.get("/api/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/talk", response_model=TalkResponse)
+@app.post("/api/talk", response_model=TalkResponse)
 def talk(req: TalkRequest) -> TalkResponse:
     if not req.text:
         raise HTTPException(status_code=400, detail="text is required")
@@ -69,6 +78,8 @@ def talk(req: TalkRequest) -> TalkResponse:
     try:
         emb = llama_embed(req.text)
     except Exception:
+        emb = None
+    if emb is None:
         emb = text_to_embedding(req.text)
 
     if emb.shape[0] != EMBED_DIM:
@@ -88,13 +99,15 @@ def talk(req: TalkRequest) -> TalkResponse:
     try:
         reply = llama_completion(req.text)
     except Exception:
+        reply = None
+    if not reply:
         summary = req.text.strip().replace('\n', ' ')[:120]
         reply = f"Tomo: I heard '{summary}'. Thanks for sharing!"
 
     return TalkResponse(reply=reply, memory_id=row.get("id"))
 
 
-@app.post("/memories/search")
+@app.post("/api/memories/search")
 def memories_search(req: SearchRequest) -> List[Dict[str, Any]]:
     emb = text_to_embedding(req.text)
     emb_literal = vec_to_pgvector_literal(emb)
@@ -102,33 +115,8 @@ def memories_search(req: SearchRequest) -> List[Dict[str, Any]]:
     return rows
 
 
-class ModelStartRequest(BaseModel):
-    # command as a list of args; if omitted we use LLAMA_SERVER_CMD env
-    cmd: Optional[List[str]] = None
-    cwd: Optional[str] = None
-
-
-@app.get("/model/status")
+@app.get("/api/model/status")
 def model_status() -> Dict[str, Any]:
     running = llama_health()
     return {"running": running, "url": os.environ.get("LLAMA_SERVER_URL", "http://127.0.0.1:8080")}
 
-
-@app.post("/model/start")
-def model_start(req: ModelStartRequest):
-    # decide command
-    cmd = req.cmd
-    if not cmd:
-        raw = os.environ.get("LLAMA_SERVER_CMD")
-        if not raw:
-            raise HTTPException(status_code=400, detail="No command provided and LLAMA_SERVER_CMD not set")
-        # naive split
-        cmd = raw.split()
-    res = llama_start_server(cmd, cwd=req.cwd)
-    return res
-
-
-@app.post("/model/stop")
-def model_stop():
-    res = llama_stop_server()
-    return res
