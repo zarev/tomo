@@ -94,8 +94,15 @@ def main() -> None:
     transcript = transcribe_audio(AUDIO_FILE, TRANSCRIPT_JSON)
 
     segments = transcript.get("segments")
-    if not segments:
-        raise ValueError("No segments returned by Whisper transcription")
+    if not isinstance(segments, list) or not segments:
+        raise ValueError("No segments returned by Whisper transcription or segments is not a list")
+    # Validate each segment has required keys
+    required_keys = {"start", "end", "text"}
+    for i, seg in enumerate(segments):
+        if not isinstance(seg, dict) or not required_keys.issubset(seg):
+            raise ValueError(
+                f"Segment at index {i} is missing required keys {required_keys} or is not a dict: {seg}"
+            )
 
     export_clips(AUDIO_FILE, segments, lines)
 
