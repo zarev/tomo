@@ -3,3 +3,5 @@ pdf2image
 Pillow
 tqdm
 google-generativeai
+openai-whisper
+pydub
