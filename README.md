@@ -1,22 +1,17 @@
-# TOMO PoC (local menubar AI companion) - PoC scaffold
+# Throxy Outbound Pipeline UI
 
-This repository contains a minimal PoC scaffold for the TOMO project: a local
-Postgres+pgvector instance and a tiny FastAPI backend that demonstrates storing
-and retrieving vector memories using a deterministic (small) embedder.
+This repo now ships a simple web UI + FastAPI backend for the Throxy outbound pipeline. It helps you funnel a raw list of people into a tight target audience using company stage, persona guidance, and step-by-step prompts (stored in markdown files).
 
-What is included:
-- `docker-compose.yml` — starts Postgres with pgvector
-- `backend/` — minimal FastAPI backend, a deterministic embedder, DB helpers, and SQL migration
+## Features
+- Shadcn-inspired UI for stage selection, persona/profile editing, and prompt tuning.
+- Step-by-step pipeline that visually reduces the list size at each gate.
+- Prompts stored in `data/prompts.md` and editable in the UI.
+- Final target list saved as a local CSV export.
+- Optional Gemini CLI integration with MCP web search (`chrome-dev-tools`).
 
-Quickstart (Linux/macOS):
+## Local development
 
-1) Start Postgres with pgvector:
-
-```bash
-docker compose up -d
-```
-
-2) (Optional) Create a virtualenv and install backend deps:
+### 1) Install dependencies
 
 ```bash
 python -m venv .venv
@@ -24,19 +19,46 @@ source .venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-3) Run the backend (it will attempt to run migrations on startup):
+### 2) Run the app
 
 ```bash
 uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-4) Try API endpoints:
+Open http://127.0.0.1:8000 to use the UI.
 
-- POST http://127.0.0.1:8000/talk with JSON { "text": "hello tomo" }
-- POST http://127.0.0.1:8000/memories/search with JSON { "text": "hello" }
+### 3) Update prompt and profile templates
 
-Notes / next steps:
-- This PoC uses a deterministic placeholder embedder; swap it for a real
-  embedding model (local small model or llama.cpp embedding) for semantic recall.
-- Next tasks: wire llama.cpp for inference, add a Tauri menubar UI, implement
-  the pet tick loop and memory summarization jobs.
+- `data/prompts.md` — prompt text for each filtering step.
+- `data/persona.md` — ideal persona template and notes.
+- `data/company_profile.md` — company background and targeting notes.
+
+You can edit these files directly or save them from the UI.
+
+## Gemini CLI + MCP integration
+
+The backend can call Gemini CLI when `GEMINI_CLI_ENABLED=1`.
+
+```bash
+export GEMINI_CLI_ENABLED=1
+export GEMINI_CLI_COMMAND="gemini --mcp chrome-dev-tools --json"
+```
+
+The pipeline will send each step prompt + data as JSON via stdin and expects a JSON response containing `keep_indices` (array of indices to keep). If Gemini CLI is not enabled, the app falls back to heuristic filtering.
+
+## Docker deployment
+
+Build and run a simple container:
+
+```bash
+docker build -t throxy-pipeline .
+docker run -p 8000:8000 throxy-pipeline
+```
+
+Then open http://localhost:8000.
+
+## Tests
+
+```bash
+pytest
+```

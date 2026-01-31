@@ -2,348 +2,269 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Tomo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Throxy Outbound Pipeline</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
+      :root {
+        color-scheme: light;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --text: #0f172a;
+        --muted: #64748b;
+        --primary: #111827;
+        --accent: #6366f1;
+        --accent-soft: rgba(99, 102, 241, 0.1);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
       * {
         box-sizing: border-box;
       }
 
       body {
         margin: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #e5d6a5;
-        font-family: "Press Start 2P", "Courier New", monospace;
-        color: #3b2b20;
-        letter-spacing: 0.04em;
+        background: var(--bg);
+        color: var(--text);
       }
 
-      .pet-shell {
-        width: clamp(320px, 90vw, 520px);
-        background: #f3d680;
-        border: 4px solid #8b6f3d;
-        border-radius: 26px;
-        padding: 28px 28px 24px;
-        box-shadow: 0 12px 0 #aa8442, 0 16px 30px rgba(85, 57, 21, 0.4);
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
+      header {
+        padding: 32px clamp(20px, 5vw, 64px) 12px;
       }
 
-      .screen {
-        position: relative;
-        background: #f6d9b4;
-        border: 4px solid #5d3d2b;
-        border-radius: 18px;
-        overflow: hidden;
-        min-height: 240px;
+      header h1 {
+        margin: 0;
+        font-size: clamp(24px, 4vw, 36px);
+        font-weight: 700;
       }
 
-      .screen::before {
-        content: "";
-        position: absolute;
-        inset: -40% -20% -20% -40%;
-        background-image: repeating-linear-gradient(
-            135deg,
-            rgba(164, 211, 208, 0.9) 0 38px,
-            rgba(247, 166, 183, 0.9) 38px 76px
-          );
-        transform: rotate(-6deg) scale(1.15);
+      header p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        max-width: 720px;
       }
 
-      .screen::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: rgba(255, 237, 205, 0.58);
-      }
-
-      .screen-content {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        padding: 18px 20px;
-        gap: 18px;
-      }
-
-      .status-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        text-transform: uppercase;
-        font-size: 0.7rem;
-      }
-
-      .status-clock {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(248, 240, 212, 0.7);
-        padding: 6px 10px;
-        border-radius: 999px;
-        border: 2px solid #5d3d2b;
-      }
-
-      .status-clock span:first-child {
-        font-size: 0.85rem;
-      }
-
-      .pet-name {
-        text-align: center;
-        flex: 1;
+      main {
         display: grid;
-        justify-items: center;
-        gap: 2px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: 24px;
+        padding: 24px clamp(20px, 5vw, 64px) 64px;
       }
 
-      .pet-name .label {
-        font-size: 0.6rem;
-        letter-spacing: 0.16em;
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
       }
 
-      .pet-name .value {
-        font-size: 0.9rem;
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
       }
 
-      .meters {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
       }
 
-      .meter {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .meter-label {
-        font-size: 0.6rem;
-      }
-
-      .meter-dots {
-        display: flex;
-        gap: 4px;
-      }
-
-      .dot {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        border: 2px solid #5d3d2b;
-        background: rgba(247, 238, 214, 0.8);
-        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.65);
-      }
-
-      .dot.filled.food {
-        background: linear-gradient(145deg, #b93b20 0%, #f8734a 80%);
-        box-shadow: inset -2px -3px 0 rgba(77, 22, 7, 0.45);
-      }
-
-      .dot.filled.fun {
-        background: linear-gradient(145deg, #f5f0f4 0%, #ffffff 70%);
-        box-shadow: inset -2px -3px 0 rgba(120, 112, 121, 0.35);
-      }
-
-      .pet-display {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .pet-sprite {
-        font-size: 3.4rem;
-        color: #1a1918;
-        text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
-      }
-
-      .pet-speech {
-        background: rgba(246, 231, 192, 0.9);
-        border: 3px solid #5d3d2b;
+      textarea,
+      input,
+      select {
+        width: 100%;
         border-radius: 12px;
+        border: 1px solid var(--border);
         padding: 12px 14px;
-        font-size: 0.65rem;
-        min-height: 54px;
-        display: flex;
-        align-items: center;
-      }
-
-      .action-panel {
-        background: #d8e2a2;
-        border: 4px solid #657844;
-        border-radius: 18px;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .action-label {
-        font-size: 0.75rem;
+        font-size: 14px;
+        font-family: inherit;
+        background: #fdfdff;
       }
 
       textarea {
-        width: 100%;
-        min-height: 70px;
+        min-height: 120px;
         resize: vertical;
-        border: 3px solid #657844;
-        border-radius: 12px;
-        padding: 12px;
-        background: #eef4c8;
-        font-family: inherit;
-        font-size: 0.7rem;
-        color: #2e311d;
       }
 
-      textarea::placeholder {
-        color: rgba(46, 49, 29, 0.6);
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
       }
 
-      .actions {
+      .row {
         display: flex;
-        gap: 10px;
+        gap: 12px;
         flex-wrap: wrap;
       }
 
-      button {
-        appearance: none;
-        border: 3px solid #5d3d2b;
-        background: linear-gradient(180deg, #f5df94 0%, #ddb968 100%);
-        border-radius: 14px;
-        padding: 10px 18px;
-        font-family: inherit;
-        font-size: 0.65rem;
-        text-transform: uppercase;
+      .row > * {
+        flex: 1;
+      }
+
+      .button {
+        border: 1px solid var(--border);
+        background: var(--primary);
+        color: #ffffff;
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
         cursor: pointer;
-        box-shadow: 0 4px 0 #8b6f3d;
-        transition: transform 0.1s ease, box-shadow 0.1s ease;
       }
 
-      button:active {
-        transform: translateY(2px);
-        box-shadow: 0 2px 0 #8b6f3d;
+      .button.secondary {
+        background: #ffffff;
+        color: var(--primary);
       }
 
-      button:disabled {
+      .button:disabled {
+        opacity: 0.6;
         cursor: not-allowed;
-        opacity: 0.5;
       }
 
-      .memories-card {
-        background: rgba(255, 255, 255, 0.6);
-        border: 4px solid #5d3d2b;
-        border-radius: 18px;
+      .pipeline-step {
+        border: 1px solid var(--border);
+        border-radius: 14px;
         padding: 16px;
+        margin-bottom: 12px;
+      }
+
+      .step-header {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
         gap: 12px;
-        max-height: 160px;
-        overflow: hidden;
       }
 
-      .memories-card h3 {
-        margin: 0;
-        font-size: 0.75rem;
-        text-transform: uppercase;
+      .badge {
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 600;
       }
 
-      .memories {
-        overflow-y: auto;
+      .progress {
         display: flex;
-        flex-direction: column;
-        gap: 8px;
-        font-size: 0.6rem;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 12px 0 0;
       }
 
-      .memory-row {
-        background: rgba(247, 234, 201, 0.8);
-        border: 2px solid #8b6f3d;
-        border-radius: 10px;
+      .progress span {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        font-size: 12px;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .table th,
+      .table td {
+        text-align: left;
         padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
       }
 
-      @media (max-width: 540px) {
-        .status-row {
-          flex-direction: column;
-          align-items: stretch;
-        }
+      .table th {
+        background: #f8fafc;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
 
-        .meters {
-          flex-direction: row;
-          justify-content: center;
+      @media (max-width: 960px) {
+        main {
+          grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
   <body>
-    <div class="pet-shell">
-      <div class="screen">
-        <div class="screen-content">
-          <div class="status-row">
-            <div class="status-clock">
-              <span>🕒</span>
-              <span>2 Days</span>
-            </div>
-            <div class="pet-name">
-              <div class="label">Name</div>
-              <div class="value" id="pet-name">Pookie</div>
-            </div>
-            <div class="meters">
-              <div class="meter">
-                <div class="meter-label">Food</div>
-                <div class="meter-dots" aria-hidden="true">
-                  <span class="dot filled food"></span>
-                  <span class="dot filled food"></span>
-                  <span class="dot"></span>
-                  <span class="dot"></span>
-                </div>
-              </div>
-              <div class="meter">
-                <div class="meter-label">Fun</div>
-                <div class="meter-dots" aria-hidden="true">
-                  <span class="dot filled fun"></span>
-                  <span class="dot filled fun"></span>
-                  <span class="dot"></span>
-                </div>
-              </div>
-            </div>
-          </div>
+    <header>
+      <h1>Throxy Outbound Pipeline</h1>
+      <p>
+        Funnel a raw list of people into a laser-focused outbound list. Update persona and
+        company context, refine prompts per step, and watch the list size shrink as you
+        reach your core target audience.
+      </p>
+    </header>
 
-          <div class="pet-display">
-            <div class="pet-sprite" id="pet-sprite">9</div>
-          </div>
+    <main>
+      <section class="card">
+        <h2>Input & Context</h2>
+        <label for="stage">Company stage</label>
+        <select id="stage">
+          <option value="pre-seed">Pre-seed (raised $6M)</option>
+          <option value="seed">Seed</option>
+        </select>
 
-          <div class="pet-speech" id="reply">Talk to Tomo to see a reply.</div>
+        <div style="margin-top: 16px">
+          <label for="people">People list (CSV or newline separated)</label>
+          <textarea id="people" placeholder="Name, Title, Company, Email, Location, Industry, Notes"></textarea>
+          <p class="muted">Paste a CSV export or a simple list. The parser detects headers automatically.</p>
         </div>
-      </div>
 
-      <div class="action-panel">
-        <div class="action-label">Type an action...</div>
-        <textarea id="input" placeholder="Type an action..."></textarea>
-        <div class="actions">
-          <button id="send">Talk</button>
-          <button id="search">Search Memories</button>
+        <div style="margin-top: 16px">
+          <label for="persona">Ideal persona (markdown)</label>
+          <textarea id="persona"></textarea>
         </div>
-      </div>
 
-      <div class="memories-card">
-        <h3>Memories</h3>
-        <div class="memories" id="memories"></div>
-      </div>
-    </div>
+        <div style="margin-top: 16px">
+          <label for="company">Company profile (markdown)</label>
+          <textarea id="company"></textarea>
+        </div>
+
+        <div class="row" style="margin-top: 16px">
+          <button class="button secondary" id="save-profile">Save profile</button>
+          <button class="button" id="run">Run pipeline</button>
+        </div>
+      </section>
+
+      <section>
+        <div class="card" style="margin-bottom: 24px">
+          <h2>Pipeline steps & prompts</h2>
+          <div id="steps"></div>
+          <div class="row" style="margin-top: 12px">
+            <button class="button secondary" id="save-prompts">Save prompts</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Output</h2>
+          <div id="summary" class="muted">Run the pipeline to generate the target list.</div>
+          <div id="progress" class="progress"></div>
+          <div id="download" style="margin: 12px 0"></div>
+          <div style="max-height: 320px; overflow: auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Title</th>
+                  <th>Company</th>
+                  <th>Email</th>
+                  <th>Location</th>
+                </tr>
+              </thead>
+              <tbody id="output-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
 
     <script src="/static/main.js"></script>
   </body>
