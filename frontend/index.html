@@ -52,7 +52,7 @@
 
       main {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        grid-template-columns: minmax(0, 1fr);
         gap: 24px;
         padding: 24px clamp(20px, 5vw, 64px) 64px;
       }
@@ -63,6 +63,105 @@
         border-radius: 16px;
         padding: 20px;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+      }
+
+      .hamburger {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: #ffffff;
+        color: var(--primary);
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        z-index: 20;
+      }
+
+      .hamburger:active {
+        transform: translateY(1px);
+      }
+
+      .hamburger-icon {
+        font-size: 18px;
+      }
+
+      .hamburger-label {
+        font-size: 14px;
+      }
+
+      .drawer-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 150ms ease;
+        z-index: 18;
+      }
+
+      .drawer-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: min(460px, 90vw);
+        height: 100vh;
+        background: #f8fafc;
+        border-left: 1px solid var(--border);
+        box-shadow: -12px 0 40px rgba(15, 23, 42, 0.12);
+        transform: translateX(100%);
+        transition: transform 200ms ease;
+        z-index: 19;
+        display: flex;
+        flex-direction: column;
+        padding: 16px;
+        gap: 12px;
+      }
+
+      .drawer.open {
+        transform: translateX(0);
+      }
+
+      .drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 4px;
+      }
+
+      .drawer-title {
+        font-weight: 700;
+      }
+
+      .drawer-subtitle {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .drawer-content {
+        overflow: auto;
+        padding: 4px;
+      }
+
+      .icon-button {
+        border: 1px solid var(--border);
+        background: #ffffff;
+        border-radius: 10px;
+        width: 34px;
+        height: 34px;
+        font-size: 18px;
+        cursor: pointer;
       }
 
       .card h2 {
@@ -89,8 +188,15 @@
       }
 
       textarea {
+        width: 100%;
         min-height: 120px;
         resize: vertical;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        padding: 12px 14px;
+        font-size: 14px;
+        font-family: inherit;
+        background: #fdfdff;
       }
 
       .muted {
@@ -108,6 +214,60 @@
         flex: 1;
       }
 
+      .md-preview {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        background: #ffffff;
+        max-height: 320px;
+        overflow: auto;
+        margin-top: 8px;
+      }
+
+      .md-collapse {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #ffffff;
+        margin-top: 8px;
+      }
+
+      .md-collapse summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 12px 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .md-collapse summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .md-collapse summary::after {
+        content: "▾";
+        font-size: 12px;
+        color: var(--muted);
+        transition: transform 150ms ease;
+      }
+
+      .md-collapse[open] summary::after {
+        transform: rotate(180deg);
+      }
+
+      .md-collapse .md-preview {
+        margin-top: 0;
+        border: 0;
+        border-top: 1px solid var(--border);
+        border-radius: 0 0 12px 12px;
+      }
+
+      .setup-step[hidden] {
+        display: none !important;
+      }
+
       .button {
         border: 1px solid var(--border);
         background: var(--primary);
@@ -117,6 +277,8 @@
         font-weight: 600;
         font-size: 14px;
         cursor: pointer;
+        position: relative;
+        overflow: hidden;
       }
 
       .button.secondary {
@@ -129,11 +291,69 @@
         cursor: not-allowed;
       }
 
+      .button.loading .progress-bar {
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(99, 102, 241, 0.2);
+        overflow: hidden;
+      }
+
+      .button.loading .progress-fill {
+        display: block;
+        height: 100%;
+        width: 36%;
+        background: var(--accent);
+        border-radius: 999px;
+        animation: loading-bar 1.2s ease-in-out infinite;
+      }
+
+      @keyframes loading-bar {
+        0% {
+          transform: translateX(-120%);
+        }
+        50% {
+          transform: translateX(20%);
+        }
+        100% {
+          transform: translateX(120%);
+        }
+      }
+
       .pipeline-step {
         border: 1px solid var(--border);
         border-radius: 14px;
         padding: 16px;
         margin-bottom: 12px;
+      }
+
+      .pipeline-screen {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 30;
+      }
+
+      .pipeline-screen.hidden {
+        display: none;
+      }
+
+      .pipeline-screen-card {
+        width: min(920px, 95vw);
+        max-height: 90vh;
+        overflow: auto;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
       }
 
       .step-header {
@@ -177,6 +397,8 @@
         text-align: left;
         padding: 8px 10px;
         border-bottom: 1px solid var(--border);
+        vertical-align: top;
+        word-break: break-word;
       }
 
       .table th {
@@ -194,47 +416,21 @@
     </style>
   </head>
   <body>
-    <header>
-      <h1>Throxy Outbound Pipeline</h1>
-      <p>
-        Funnel a raw list of people into a laser-focused outbound list. Update persona and
-        company context, refine prompts per step, and watch the list size shrink as you
-        reach your core target audience.
-      </p>
-    </header>
+    <button class="hamburger" id="menu-toggle" aria-expanded="false" aria-controls="drawer">
+      <span class="hamburger-icon">☰</span>
+      <span class="hamburger-label">Pipeline & prompts</span>
+    </button>
 
-    <main>
-      <section class="card">
-        <h2>Input & Context</h2>
-        <label for="stage">Company stage</label>
-        <select id="stage">
-          <option value="pre-seed">Pre-seed (raised $6M)</option>
-          <option value="seed">Seed</option>
-        </select>
-
-        <div style="margin-top: 16px">
-          <label for="people">People list (CSV or newline separated)</label>
-          <textarea id="people" placeholder="Name, Title, Company, Email, Location, Industry, Notes"></textarea>
-          <p class="muted">Paste a CSV export or a simple list. The parser detects headers automatically.</p>
+    <div id="drawer-overlay" class="drawer-overlay"></div>
+    <aside id="drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <div>
+          <div class="drawer-title">Pipeline & prompts</div>
+          <div class="drawer-subtitle">Configure steps and review output</div>
         </div>
-
-        <div style="margin-top: 16px">
-          <label for="persona">Ideal persona (markdown)</label>
-          <textarea id="persona"></textarea>
-        </div>
-
-        <div style="margin-top: 16px">
-          <label for="company">Company profile (markdown)</label>
-          <textarea id="company"></textarea>
-        </div>
-
-        <div class="row" style="margin-top: 16px">
-          <button class="button secondary" id="save-profile">Save profile</button>
-          <button class="button" id="run">Run pipeline</button>
-        </div>
-      </section>
-
-      <section>
+        <button class="icon-button" id="drawer-close" aria-label="Close menu">×</button>
+      </div>
+      <div class="drawer-content">
         <div class="card" style="margin-bottom: 24px">
           <h2>Pipeline steps & prompts</h2>
           <div id="steps"></div>
@@ -247,7 +443,12 @@
           <h2>Output</h2>
           <div id="summary" class="muted">Run the pipeline to generate the target list.</div>
           <div id="progress" class="progress"></div>
+          <div id="step-results" style="margin-top: 12px"></div>
           <div id="download" style="margin: 12px 0"></div>
+          <details class="md-collapse" style="margin-top: 12px">
+            <summary class="muted" style="font-weight: 600">Raw response</summary>
+            <pre id="raw-response" class="md-preview" style="white-space: pre-wrap; max-height: 320px"></pre>
+          </details>
           <div style="max-height: 320px; overflow: auto">
             <table class="table">
               <thead>
@@ -257,15 +458,104 @@
                   <th>Company</th>
                   <th>Email</th>
                   <th>Location</th>
+                  <th>Score</th>
+                  <th>Rank</th>
+                  <th>Reason</th>
                 </tr>
               </thead>
               <tbody id="output-body"></tbody>
             </table>
           </div>
+
+          <div class="md-preview" id="markdown-output" style="margin-top: 12px; max-height: 320px; overflow: auto"></div>
+        </div>
+      </div>
+    </aside>
+
+    <header>
+      <h1>Throxy Outbound Pipeline</h1>
+      <p>
+        Funnel a raw list of people into a laser-focused outbound list. Update persona and
+        company context, refine prompts per step, and watch the list size shrink as you
+        reach your core target audience.
+      </p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Input & Context</h2>
+        <div class="muted" id="step-progress" style="margin-bottom: 12px">Step 1 of 3</div>
+
+        <div class="setup-step" data-step="1">
+          <label for="people">People list (CSV or newline separated)</label>
+          <textarea id="people" placeholder="Name, Title, Company, Email, Location, Industry, Notes"></textarea>
+          <div class="row" style="margin-top: 8px">
+            <input type="file" id="people-file" accept=".csv,.txt" />
+          </div>
+          <p class="muted">Paste or upload a CSV/list. The parser detects headers automatically.</p>
+          <div class="row" style="margin-top: 16px">
+            <button class="button" id="step-next-1" type="button">Next</button>
+          </div>
+        </div>
+
+        <div class="setup-step" data-step="2" hidden>
+          <label for="persona">Ideal persona (markdown)</label>
+          <details class="md-collapse">
+            <summary>Edit markdown</summary>
+            <textarea id="persona"></textarea>
+          </details>
+          <div class="md-preview" id="persona-preview"></div>
+          <div class="row" style="margin-top: 16px">
+            <button class="button secondary" id="step-back-2" type="button">Back</button>
+            <button class="button" id="step-next-2" type="button">Next</button>
+          </div>
+        </div>
+
+        <div class="setup-step" data-step="3" hidden>
+          <label for="company">Company profile (markdown)</label>
+          <details class="md-collapse">
+            <summary>Edit markdown</summary>
+            <textarea id="company"></textarea>
+          </details>
+          <div class="row" style="margin-top: 8px">
+            <input type="file" id="company-file" accept=".md,.txt" />
+            <button class="button" id="company-populate" type="button">Populate via Gemini</button>
+          </div>
+          <div class="md-preview" id="company-preview"></div>
+          <div class="row" style="margin-top: 16px">
+            <button class="button secondary" id="step-back-3" type="button">Back</button>
+            <button class="button" id="run">Run pipeline</button>
+          </div>
         </div>
       </section>
     </main>
 
+    <section id="pipeline-screen" class="pipeline-screen hidden" aria-live="polite">
+      <div class="pipeline-screen-card">
+        <div class="row" style="align-items: center; justify-content: space-between">
+          <h2 style="margin: 0">Pipeline status</h2>
+          <div class="row" style="flex: 0 0 auto">
+            <button class="button secondary" id="pipeline-rerun" type="button">Rerun pipeline</button>
+            <button class="button secondary" id="pipeline-close" type="button">Close</button>
+          </div>
+        </div>
+        <p class="muted" id="pipeline-status">We are ranking the best-fit leads per company using your persona and context.</p>
+        <div style="margin-top: 12px">
+          <button class="button" id="pipeline-loading" type="button" disabled>Pipeline running…</button>
+        </div>
+        <div id="pipeline-error" class="muted" style="margin-top: 12px; color: #b91c1c"></div>
+        <div style="margin-top: 20px">
+          <div class="muted" style="margin-bottom: 8px">Step-by-step output</div>
+          <div id="pipeline-steps-overlay"></div>
+        </div>
+        <div style="margin-top: 20px">
+          <div class="muted" style="margin-bottom: 8px">Draft outreach template (top 10 leads)</div>
+          <div class="md-preview" id="pipeline-template"></div>
+        </div>
+      </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/static/main.js"></script>
   </body>
 </html>

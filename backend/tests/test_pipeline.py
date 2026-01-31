@@ -29,7 +29,6 @@ def test_pipeline_run(tmp_path, monkeypatch):
             {"name": "Ava", "title": "Founder", "company": "StartCo", "email": "a@co.com"},
             {"name": "Ben", "title": "Engineer", "company": "BigCorp", "email": "b@co.com"},
         ],
-        "stage": "pre-seed",
         "prompts": [
             {"step_id": "stage-fit", "title": "Stage Fit Gate", "prompt": "Stage fit prompt"},
             {"step_id": "persona-fit", "title": "Persona Fit", "prompt": "Persona fit prompt"},
@@ -41,12 +40,14 @@ def test_pipeline_run(tmp_path, monkeypatch):
     response = client.post("/api/pipeline/run", json=payload)
     assert response.status_code == 200
     data = response.json()
+    assert data["stage"] == "pre-seed"
     assert "steps" in data
     assert "final_people" in data
     assert data["csv_download_url"].startswith("/api/exports/")
     export_path = Path(data["csv_path"])
     assert export_path.exists()
     assert export_path.read_text(encoding="utf-8").startswith("name,title")
+    assert all("score" in person for person in data["final_people"])
 
 
 def test_prompts_endpoint(tmp_path, monkeypatch):

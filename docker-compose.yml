@@ -1,6 +1,6 @@
 services:
   db:
-    image: ankane/pgvector:pg15-latest
+    image: ankane/pgvector
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
@@ -21,6 +21,12 @@ services:
       PYTHONUNBUFFERED: '1'
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       LLAMA_SERVER_URL: ${LLAMA_SERVER_URL:-http://llama:8080}
+      GEMINI_CLI_ENABLED: "1"
+      GEMINI_PIPELINE_ENABLED: "1"
+      GEMINI_PIPELINE_REQUIRED: "1"
+      GEMINI_CLI_TIMEOUT: "120"
+      GEMINI_CLI_COMMAND: ${GEMINI_CLI_COMMAND:-gemini --output-format json --prompt}
+      LLAMA_REQUEST_TIMEOUT: "20"
     depends_on:
       - db
       - llama
