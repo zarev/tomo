@@ -13,6 +13,32 @@ from .settings import EXPORT_DIR
 from .gemini_cli import run_company_research, is_enabled as gemini_enabled, GeminiCLIError
 
 
+def _run_company_research_direct(prompt: str, context: Dict[str, Any], api_key: str) -> str:
+    try:
+        import google.generativeai as genai
+    except Exception as exc:
+        raise RuntimeError("google-generativeai is not available") from exc
+
+    model_name = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(model_name)
+
+    persona = context.get("persona") or ""
+    full_prompt = (
+        "Write a concise 200-300 word markdown company profile for Throxy. "
+        "Include product summary, target audience notes, and competitive positioning. "
+        "If you cannot browse, make reasonable assumptions and label them. "
+        "Use headings and bullet points where helpful.\n\n"
+        f"Persona context:\n{persona}"
+    )
+
+    response = model.generate_content(full_prompt)
+    text = getattr(response, "text", None)
+    if not text:
+        raise RuntimeError("Gemini API returned no content")
+    return text.strip()
+
+
 class PromptPayload(BaseModel):
     step_id: str
     title: str
@@ -107,25 +133,30 @@ def update_profile(req: ProfileUpdateRequest) -> Dict[str, str]:
 
 @app.post("/api/company/auto")
 def populate_company_profile(req: CompanyPopulateRequest) -> Dict[str, str]:
-    if not gemini_enabled():
-        raise HTTPException(status_code=400, detail="Gemini CLI not enabled. Set GEMINI_CLI_ENABLED=1 and GEMINI_CLI_COMMAND with your key.")
-
-    base_prompt = (
-        "Using chrome-dev-tools MCP, do a brief search of recent publications, funding news, press releases, or product updates about Throxy. "
-        "Return a concise, 200-300 word markdown summary under company_profile_md. Include dates and source names when possible."
-    )
     context = {"persona": req.persona}
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         raise HTTPException(status_code=400, detail="Gemini API key missing in environment.")
 
-    try:
-        profile_md = run_company_research(base_prompt, context, api_key=api_key)
-    except GeminiCLIError as exc:
-        raise HTTPException(status_code=502, detail=f"Gemini CLI failed: {exc}")
+    profile_md = None
+    cli_error = None
+    if gemini_enabled():
+        base_prompt = (
+            "Using chrome-dev-tools MCP, do a brief search of recent publications, funding news, press releases, or product updates about Throxy. "
+            "Return a concise, 200-300 word markdown summary under company_profile_md. Include dates and source names when possible."
+        )
+        try:
+            profile_md = run_company_research(base_prompt, context, api_key=api_key)
+        except GeminiCLIError as exc:
+            cli_error = exc
 
     if not profile_md:
-        raise HTTPException(status_code=502, detail="Gemini CLI returned no company profile content")
+        try:
+            profile_md = _run_company_research_direct("", context, api_key=api_key)
+        except Exception as exc:
+            if cli_error:
+                raise HTTPException(status_code=502, detail=f"Gemini CLI failed: {cli_error}; Gemini API failed: {exc}")
+            raise HTTPException(status_code=502, detail=f"Gemini API failed: {exc}")
 
     return {"company": profile_md}
 

@@ -104,6 +104,9 @@ Open **http://127.0.0.1:8000** to use the UI.
 │   ├── company_profile.md  # Company targeting context
 │   ├── sources.csv    # Input data sources
 │   └── exports/       # Generated CSV exports
+├── api/               # Vercel serverless entry point
+│   └── index.py
+├── vercel.json        # Vercel deployment config
 └── docker-compose.yml
 ```
 
@@ -118,6 +121,46 @@ Edit these files to customize the pipeline behavior:
 | `data/company_profile.md` | Company background and targeting context |
 
 You can edit these files directly or through the UI.
+
+---
+
+## Deployment to Vercel
+
+### 1. Install Vercel CLI (if not already installed)
+
+```bash
+npm install -g vercel
+```
+
+### 2. Deploy
+
+```bash
+# Login to Vercel (first time only)
+vercel login
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+### 3. Configure Environment Variables
+
+In the Vercel dashboard (or via CLI), set:
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_API_KEY` | Your Gemini API key |
+| `GEMINI_API_KEY` | Same as above (alias) |
+| `GEMINI_CLI_ENABLED` | Set to `1` to enable AI pipeline |
+| `GEMINI_PIPELINE_ENABLED` | Set to `1` to enable pipeline processing |
+
+### Important Notes for Vercel
+
+- **Serverless Functions**: The FastAPI backend runs as a Vercel serverless function with a 60-second timeout
+- **File Storage**: Exports are ephemeral in serverless; download CSVs immediately after generation
+- **Cold Starts**: First request after inactivity may be slower (~2-3 seconds)
 
 ---
 
@@ -150,3 +193,8 @@ pytest -v
 - Ensure `GEMINI_CLI_ENABLED=1` is set
 - The Gemini CLI is installed automatically in the Docker container
 - For local development without Docker, install it manually: `npm install -g @google/gemini-cli`
+
+### Vercel deployment issues
+- Check that `GOOGLE_API_KEY` is set in Vercel environment variables
+- View function logs in Vercel dashboard for errors
+- Ensure the 60-second timeout is sufficient for your batch size
