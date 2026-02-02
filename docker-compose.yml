@@ -23,6 +23,7 @@ services:
       GEMINI_CLI_ENABLED: "1"
       GEMINI_PIPELINE_ENABLED: "1"
       GEMINI_PIPELINE_REQUIRED: "1"
+      GEMINI_MAX_PEOPLE: "100"
       GEMINI_CLI_TIMEOUT: "120"
       GEMINI_CLI_COMMAND: ${GEMINI_CLI_COMMAND:-gemini --output-format json --prompt}
     depends_on:

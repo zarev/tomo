@@ -1,5 +1,7 @@
 """FastAPI backend for Throxy outbound pipeline UI."""
+import logging
 import os
+import traceback
 from typing import Any, Dict, List
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -11,6 +13,9 @@ from .profile_store import load_profiles, save_profiles
 from .prompt_store import PromptStep, load_prompts, save_prompts
 from .settings import EXPORT_DIR
 from .gemini_cli import run_company_research, is_enabled as gemini_enabled, GeminiCLIError
+
+
+logger = logging.getLogger("backend")
 
 
 def _run_company_research_direct(prompt: str, context: Dict[str, Any], api_key: str) -> str:
@@ -165,7 +170,21 @@ def populate_company_profile(req: CompanyPopulateRequest) -> Dict[str, str]:
 def run_pipeline_endpoint(req: PipelineRequest) -> PipelineResponse:
     profiles = load_profiles()
     prompt_steps = [PromptStep(step_id=step.step_id, title=step.title, prompt=step.prompt) for step in req.prompts]
-    results, final_people, stage_label = run_pipeline(req.people, prompt_steps, profiles["persona"], profiles["company"])
+
+    try:
+        results, final_people, stage_label = run_pipeline(
+            req.people,
+            prompt_steps,
+            profiles["persona"],
+            profiles["company"],
+        )
+    except GeminiCLIError as exc:
+        logger.error("Gemini pipeline failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Gemini pipeline failed: {exc}")
+    except Exception as exc:  # pragma: no cover
+        logger.error("Pipeline error: %s\n%s", exc, traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {exc}")
+
     csv_path = write_csv(final_people)
     csv_filename = csv_path.name
     return PipelineResponse(
