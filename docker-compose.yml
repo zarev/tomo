@@ -1,6 +1,6 @@
 services:
   db:
-    image: ankane/pgvector:pg15-latest
+    image: ankane/pgvector
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
@@ -20,32 +20,18 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/tomo
       PYTHONUNBUFFERED: '1'
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
-      LLAMA_SERVER_URL: ${LLAMA_SERVER_URL:-http://llama:8080}
+      GEMINI_CLI_ENABLED: "1"
+      GEMINI_PIPELINE_ENABLED: "1"
+      GEMINI_PIPELINE_REQUIRED: "1"
+      GEMINI_MAX_PEOPLE: "100"
+      GEMINI_CLI_TIMEOUT: "120"
+      GEMINI_CLI_COMMAND: ${GEMINI_CLI_COMMAND:-gemini --output-format json --prompt}
     depends_on:
       - db
-      - llama
     ports:
       - "8000:8000"
     command: >
       sh -c "uvicorn backend.main:app --host 0.0.0.0 --port 8000"
 
-  llama:
-    image: ${LLAMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:full}
-    # Expose a common HTTP port used by many llama.cpp HTTP wrappers. If the
-    # image provides a different port, override LLAMA_SERVER_URL in backend env.
-    ports:
-      - "8080:8080"
-    volumes:
-      - llama-data:/data
-    restart: unless-stopped
-
 volumes:
   db-data:
-
-
-  # Optional llama container that exposes a simple HTTP server compatible with
-  # many llama.cpp HTTP front-ends. The image is overridable via the
-  # LLAMA_IMAGE environment variable; by default we point at ggerganov's
-  # common build location. If you have a different image or tag, set LLAMA_IMAGE
-  # in your environment before running `docker compose up`.
-  llama-data: {}

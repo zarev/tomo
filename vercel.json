@@ -1,0 +1,8 @@
+{
+	"rewrites": [
+		{
+			"source": "/api/:path*",
+			"destination": "https://tomo-production-f45d.up.railway.app/api/:path*"
+		}
+	]
+}

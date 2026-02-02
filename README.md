@@ -1,42 +1,200 @@
-# TOMO PoC (local menubar AI companion) - PoC scaffold
+# Throxy Outbound Pipeline UI
 
-This repository contains a minimal PoC scaffold for the TOMO project: a local
-Postgres+pgvector instance and a tiny FastAPI backend that demonstrates storing
-and retrieving vector memories using a deterministic (small) embedder.
+A web UI + FastAPI backend for the Throxy outbound sales pipeline. It helps you funnel a raw list of people into a tight target audience using company stage, persona guidance, and step-by-step AI-powered prompts.
 
-What is included:
-- `docker-compose.yml` — starts Postgres with pgvector
-- `backend/` — minimal FastAPI backend, a deterministic embedder, DB helpers, and SQL migration
+## Features
 
-Quickstart (Linux/macOS):
+- Shadcn-inspired UI for stage selection, persona/profile editing, and prompt tuning
+- Step-by-step pipeline that visually reduces the list size at each filtering gate
+- Prompts stored in `data/prompts.md` and editable in the UI
+- Final target list saved as a local CSV export
+- Gemini AI integration for intelligent filtering
+- PostgreSQL + pgvector for data persistence
 
-1) Start Postgres with pgvector:
+---
+
+## Running Locally
+
+> **Note:** The Gemini API keys (`GOOGLE_API_KEY` / `GEMINI_API_KEY`) are provided automatically by the deployment platform. No manual configuration needed.
+
+### Option 1: Docker Compose (Recommended)
+
+This is the easiest way to run the full stack locally, including the database and all services.
 
 ```bash
-docker compose up -d
+# Start all services (backend, database, llama)
+docker compose up --build
+
+# Or run in detached mode
+docker compose up --build -d
 ```
 
-2) (Optional) Create a virtualenv and install backend deps:
+The app will be available at **http://localhost:8000**
+
+To stop the services:
+```bash
+docker compose down
+```
+
+To stop and remove all data volumes:
+```bash
+docker compose down -v
+```
+
+### Option 2: Run Backend Directly (Python)
+
+Use this option for faster iteration during development.
+
+#### Prerequisites
+- Python 3.11+
+- PostgreSQL with pgvector extension (or use Docker for the database only)
+
+#### 1. Start the database (if not using an external one)
+
+```bash
+docker compose up db -d
+```
+
+#### 2. Set up Python environment
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r backend/requirements.txt
 ```
 
-3) Run the backend (it will attempt to run migrations on startup):
+#### 3. Configure environment variables
+
+Create a `.env` file in the project root (or export these variables):
+
+```bash
+# Database connection
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tomo
+
+# Gemini settings (provided by deployment platform, but needed for local dev)
+GEMINI_CLI_ENABLED=1
+GEMINI_PIPELINE_ENABLED=1
+GEMINI_CLI_COMMAND="gemini --output-format json --prompt"
+```
+
+#### 4. Run the backend
 
 ```bash
 uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-4) Try API endpoints:
+Open **http://127.0.0.1:8000** to use the UI.
 
-- POST http://127.0.0.1:8000/talk with JSON { "text": "hello tomo" }
-- POST http://127.0.0.1:8000/memories/search with JSON { "text": "hello" }
+---
 
-Notes / next steps:
-- This PoC uses a deterministic placeholder embedder; swap it for a real
-  embedding model (local small model or llama.cpp embedding) for semantic recall.
-- Next tasks: wire llama.cpp for inference, add a Tauri menubar UI, implement
-  the pet tick loop and memory summarization jobs.
+## Project Structure
+
+```
+├── backend/           # FastAPI backend
+│   ├── main.py        # Application entry point
+│   ├── pipeline.py    # Pipeline filtering logic
+│   ├── gemini_client.py  # Gemini AI integration
+│   └── ...
+├── frontend/          # Static web UI
+│   ├── index.html
+│   └── main.js
+├── data/              # Configuration and data files
+│   ├── prompts.md     # Prompt templates for each filtering step
+│   ├── persona.md     # Ideal customer persona
+│   ├── company_profile.md  # Company targeting context
+│   ├── sources.csv    # Input data sources
+│   └── exports/       # Generated CSV exports
+├── api/               # Vercel serverless entry point
+│   └── index.py
+├── vercel.json        # Vercel deployment config
+└── docker-compose.yml
+```
+
+## Customizing Templates
+
+Edit these files to customize the pipeline behavior:
+
+| File | Purpose |
+|------|---------|
+| `data/prompts.md` | Prompt text for each filtering step |
+| `data/persona.md` | Ideal persona template and notes |
+| `data/company_profile.md` | Company background and targeting context |
+
+You can edit these files directly or through the UI.
+
+---
+
+## Deployment to Vercel
+
+### 1. Install Vercel CLI (if not already installed)
+
+```bash
+npm install -g vercel
+```
+
+### 2. Deploy
+
+```bash
+# Login to Vercel (first time only)
+vercel login
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+### 3. Configure Environment Variables
+
+In the Vercel dashboard (or via CLI), set:
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_API_KEY` | Your Gemini API key |
+| `GEMINI_API_KEY` | Same as above (alias) |
+| `GEMINI_CLI_ENABLED` | Set to `1` to enable AI pipeline |
+| `GEMINI_PIPELINE_ENABLED` | Set to `1` to enable pipeline processing |
+
+### Important Notes for Vercel
+
+- **Serverless Functions**: The FastAPI backend runs as a Vercel serverless function with a 60-second timeout
+- **File Storage**: Exports are ephemeral in serverless; download CSVs immediately after generation
+- **Cold Starts**: First request after inactivity may be slower (~2-3 seconds)
+
+---
+
+## Running Tests
+
+```bash
+# Activate virtual environment first
+source .venv/bin/activate
+
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+```
+
+---
+
+## Troubleshooting
+
+### Database connection issues
+- Ensure PostgreSQL is running: `docker compose up db -d`
+- Check the connection string in `DATABASE_URL`
+
+### Port already in use
+- Change the port: `uvicorn backend.main:app --port 8001`
+- Or stop conflicting services: `docker compose down`
+
+### Gemini CLI not working
+- Ensure `GEMINI_CLI_ENABLED=1` is set
+- The Gemini CLI is installed automatically in the Docker container
+- For local development without Docker, install it manually: `npm install -g @google/gemini-cli`
+
+### Vercel deployment issues
+- Check that `GOOGLE_API_KEY` is set in Vercel environment variables
+- View function logs in Vercel dashboard for errors
+- Ensure the 60-second timeout is sufficient for your batch size

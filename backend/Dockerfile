@@ -6,10 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system deps required for psycopg2 and common wheels
+# Install system deps required for psycopg2, node, and common wheels
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc libpq-dev build-essential \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends gcc libpq-dev build-essential nodejs npm \
+    && npm install -g @google/gemini-cli \
+    && rm -rf /var/lib/apt/lists/* /root/.npm
 
 # Copy only requirements first to leverage Docker layer caching
 COPY requirements.txt ./requirements.txt
